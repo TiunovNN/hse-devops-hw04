@@ -1,6 +1,12 @@
+import time
 from enum import Enum
+from itertools import count
+
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.exceptions import RequestValidationError
+from pydantic import BaseModel, ValidationError
+from pydantic.error_wrappers import ErrorWrapper
+from pydantic.v1 import PydanticValueError
 
 app = FastAPI()
 
@@ -13,7 +19,7 @@ class DogType(str, Enum):
 
 class Dog(BaseModel):
     name: str
-    pk: int
+    pk: int | None = None
     kind: DogType
 
 
@@ -31,17 +37,50 @@ dogs_db = {
     5: Dog(name='Tillman', pk=5, kind='bulldog'),
     6: Dog(name='Uga', pk=6, kind='bulldog')
 }
+dogs_next_id = count(7).__next__
 
 post_db = [
     Timestamp(id=0, timestamp=12),
     Timestamp(id=1, timestamp=10)
 ]
+post_next_id = count(2).__next__
+
+
+class PKNonUniqueError(PydanticValueError):
+    code = 'pk.non_unique'
+    msg_template = 'There is an object with pk {pk}'
 
 
 @app.get('/')
-def root():
-    # ваш код здесь
-    ...
+async def root():
+    return {}
 
-# ваш код здесь
-...
+
+@app.post('/post')
+async def get() -> Timestamp:
+    return Timestamp(id=post_next_id(), timestamp=int(time.time()))
+
+@app.get('/dog')
+async def dogs(kind: DogType) -> list[Dog]:
+    return [
+        dog
+        for dog in dogs_db.values()
+        if dog.kind == kind
+    ]
+
+@app.post('/dog')
+async def create_dog(dog: Dog) -> Dog:
+    if dog.pk is not None:
+        if dog.pk in dogs_db:
+            raise RequestValidationError(
+                errors=[
+                    ErrorWrapper(
+                        PKNonUniqueError(pk=dog.pk),
+                        loc=['body', 'pk'],
+                    ),
+                ],
+            )
+    else:
+        dog.pk = dogs_next_id()
+    dogs_db[dog.pk] = dog
+    return dog
