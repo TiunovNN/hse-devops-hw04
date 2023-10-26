@@ -1,12 +1,11 @@
 import time
 from enum import Enum
+from http import HTTPStatus
 from itertools import count
 
 from fastapi import FastAPI
-from fastapi.exceptions import RequestValidationError
-from pydantic import BaseModel, ValidationError
-from pydantic.error_wrappers import ErrorWrapper
-from pydantic.v1 import PydanticValueError
+from fastapi.exceptions import HTTPException
+from pydantic import BaseModel
 
 app = FastAPI()
 
@@ -46,11 +45,6 @@ post_db = [
 post_next_id = count(2).__next__
 
 
-class PKNonUniqueError(PydanticValueError):
-    code = 'pk.non_unique'
-    msg_template = 'There is an object with pk {pk}'
-
-
 @app.get('/')
 async def root():
     return {}
@@ -60,6 +54,7 @@ async def root():
 async def get() -> Timestamp:
     return Timestamp(id=post_next_id(), timestamp=int(time.time()))
 
+
 @app.get('/dog')
 async def dogs(kind: DogType) -> list[Dog]:
     return [
@@ -68,17 +63,14 @@ async def dogs(kind: DogType) -> list[Dog]:
         if dog.kind == kind
     ]
 
+
 @app.post('/dog')
 async def create_dog(dog: Dog) -> Dog:
     if dog.pk is not None:
         if dog.pk in dogs_db:
-            raise RequestValidationError(
-                errors=[
-                    ErrorWrapper(
-                        PKNonUniqueError(pk=dog.pk),
-                        loc=['body', 'pk'],
-                    ),
-                ],
+            raise HTTPException(
+                status_code=HTTPStatus.BAD_REQUEST,
+                detail=f'There is an object with pk {dog.pk}'
             )
     else:
         dog.pk = dogs_next_id()
