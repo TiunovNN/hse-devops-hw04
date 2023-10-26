@@ -5,7 +5,8 @@ import pytest
 from httpx import AsyncClient
 from anys import ANY_INT
 
-from src.main import app, DogType
+from src.main import app
+from src.models import DogType
 
 pytestmark = pytest.mark.anyio
 
@@ -37,7 +38,9 @@ async def test_post_get(client: AsyncClient):
 
 
 async def test_unique_timestamp_id(client: AsyncClient):
+    print('Post1')
     resp1 = await client.post("/post")
+    print('Post2')
     resp2 = await client.post("/post")
     assert resp1.json()['id'] != resp2.json()['id']
 
@@ -126,4 +129,4 @@ class TestDogs:
         assert response.status_code == HTTPStatus.OK
         response = await client.post('/dog', json=new_dog)
         assert response.status_code == HTTPStatus.BAD_REQUEST
-        assert response.json() == {'detail': 'There is an object with pk 1002'}
+        assert response.json() == {'detail': 'There is a dog with pk 1002'}

@@ -1,31 +1,13 @@
-import time
-from enum import Enum
 from http import HTTPStatus
 from itertools import count
 
 from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
-from pydantic import BaseModel
+
+import database
+from models import Dog, DogType, Timestamp
 
 app = FastAPI()
-
-
-class DogType(str, Enum):
-    terrier = "terrier"
-    bulldog = "bulldog"
-    dalmatian = "dalmatian"
-
-
-class Dog(BaseModel):
-    name: str
-    pk: int | None = None
-    kind: DogType
-
-
-class Timestamp(BaseModel):
-    id: int
-    timestamp: int
-
 
 dogs_db = {
     0: Dog(name='Bob', pk=0, kind='terrier'),
@@ -45,34 +27,54 @@ post_db = [
 post_next_id = count(2).__next__
 
 
+@app.on_event('startup')
+async def startup_event():
+    database.connect()
+
+
 @app.get('/')
 async def root():
     return {}
 
 
 @app.post('/post')
-async def get() -> Timestamp:
-    return Timestamp(id=post_next_id(), timestamp=int(time.time()))
+async def get_timestemp() -> Timestamp:
+    return database.post_db.create_timestamp()
 
 
 @app.get('/dog')
-async def dogs(kind: DogType) -> list[Dog]:
-    return [
-        dog
-        for dog in dogs_db.values()
-        if dog.kind == kind
-    ]
+async def get_dogs(kind: DogType) -> list[Dog]:
+    return database.dog_db.get_by_kind(kind)
 
 
 @app.post('/dog')
 async def create_dog(dog: Dog) -> Dog:
-    if dog.pk is not None:
-        if dog.pk in dogs_db:
-            raise HTTPException(
-                status_code=HTTPStatus.BAD_REQUEST,
-                detail=f'There is an object with pk {dog.pk}'
-            )
-    else:
-        dog.pk = dogs_next_id()
-    dogs_db[dog.pk] = dog
-    return dog
+    try:
+        return database.dog_db.create(dog)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(error)
+        )
+
+
+@app.get('/dog/{pk}')
+async def get_dog(pk: int) -> Dog:
+    try:
+        return database.dog_db.get_by_id(pk)
+    except KeyError:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f'There is no dog with pk={pk}'
+        )
+
+
+@app.get('/dog/{pk}')
+async def update_dog(pk: int) -> Dog:
+    try:
+        return database.dog_db.get_by_id(pk)
+    except KeyError:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f'There is no dog with pk={pk}'
+        )
