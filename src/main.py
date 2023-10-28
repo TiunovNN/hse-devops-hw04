@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 
 from deps import DogDB, PostDB
-from schemas import Dog, DogType, Timestamp, ErrorMessage
+from schemas import Dog, DogId, DogType, ErrorMessage, Timestamp
 
 app = FastAPI()
 
@@ -37,7 +37,7 @@ async def create_dog(dog: Dog, db: DogDB) -> Dog:
 
 
 @app.get('/dog/{pk}', responses={404: {'model': ErrorMessage}})
-async def get_dog_by_pk(pk: int, db: DogDB) -> Dog:
+async def get_dog_by_pk(pk: DogId, db: DogDB) -> Dog:
     try:
         return await db.get_by_id(pk)
     except KeyError as e:
@@ -48,7 +48,7 @@ async def get_dog_by_pk(pk: int, db: DogDB) -> Dog:
 
 
 @app.patch('/dog/{pk}', responses={400: {'model': ErrorMessage}, 404: {'model': ErrorMessage}})
-async def update_dog(pk: int, dog: Dog, db: DogDB) -> Dog:
+async def update_dog(pk: DogId, dog: Dog, db: DogDB) -> Dog:
     try:
         return await db.update_dog(pk, dog)
     except KeyError as key_error:

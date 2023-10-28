@@ -1,5 +1,7 @@
 from enum import Enum
+from typing import Annotated
 
+import annotated_types
 from pydantic import BaseModel, ConfigDict
 
 
@@ -26,3 +28,6 @@ class Timestamp(BaseModel):
 
 class ErrorMessage(BaseModel):
     detail: str
+
+
+DogId = Annotated[int, annotated_types.Ge(0), annotated_types.Lt(2 ** 32)]
