@@ -1,4 +1,4 @@
 from .repository import DogRepository, PostRepository
-from .session import SessionLocal
+from .session import async_session, sync_session, async_engine, sync_engine
 from .base_class import Base
 from .models import DogModel, TimestampModel

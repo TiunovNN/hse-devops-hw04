@@ -1,6 +1,7 @@
 from http import HTTPStatus
 from typing import Annotated
 
+import uvicorn
 from fastapi import Depends, FastAPI
 from fastapi.exceptions import HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -13,7 +14,7 @@ app = FastAPI()
 
 # Dependency
 async def get_db() -> AsyncSession:
-    async with database.SessionLocal() as session:
+    async with database.async_session() as session:
         yield session
 
 
@@ -32,6 +33,9 @@ DogDB = Annotated[database.DogRepository, Depends(dog_db)]
 PostDB = Annotated[database.PostRepository, Depends(post_db)]
 
 
+@app.on_event('startup')
+async def on_startup():
+    await connection.run_sync(Base.metadata.create_all)
 @app.get('/')
 async def root():
     return {}
@@ -83,3 +87,6 @@ async def update_dog(pk: int, dog: Dog, db: DogDB) -> Dog:
             status_code=HTTPStatus.BAD_REQUEST,
             detail=str(value_error)
         )
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="0.0.0.0", port=80)
