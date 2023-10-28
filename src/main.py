@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 import database
 from schemas import Dog, DogType, Timestamp
+from settings import settings
 
 app = FastAPI()
 
@@ -33,9 +34,6 @@ DogDB = Annotated[database.DogRepository, Depends(dog_db)]
 PostDB = Annotated[database.PostRepository, Depends(post_db)]
 
 
-@app.on_event('startup')
-async def on_startup():
-    await connection.run_sync(Base.metadata.create_all)
 @app.get('/')
 async def root():
     return {}
