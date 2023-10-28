@@ -9,10 +9,10 @@ from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
 from database import DogModel, TimestampModel
-from src.database.base_class import Base
-from src.main import app
+from database.base_class import Base
 from deps import get_db
-from src.schemas import DogType
+from main import app
+from schemas import DogType
 
 pytestmark = pytest.mark.anyio
 
