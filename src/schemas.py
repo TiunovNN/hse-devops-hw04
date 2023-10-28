@@ -14,8 +14,8 @@ class DogType(str, Enum):
 class Dog(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
-    name: str = Field(min_items=3)
-    pk: int = Field(ge=0, lt=2**32, default=None)
+    name: str = Field(min_items=3, strict=True)
+    pk: int = Field(ge=0, lt=2**31, default=None)
     kind: DogType
 
 
