@@ -1,7 +1,7 @@
 from enum import Enum
 from typing import Annotated
 
-import annotated_types
+from fastapi import Path
 from pydantic import BaseModel, ConfigDict
 
 
@@ -30,4 +30,4 @@ class ErrorMessage(BaseModel):
     detail: str
 
 
-DogId = Annotated[int, annotated_types.Interval(ge=0, lt=2 ** 31)]
+DogId = Annotated[int, Path(ge=0, lt=2**31)]
