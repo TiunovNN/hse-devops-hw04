@@ -1,4 +1,5 @@
 import time
+from copy import copy
 from http import HTTPStatus
 
 import pytest
@@ -130,3 +131,28 @@ class TestDogs:
         response = await client.post('/dog', json=new_dog)
         assert response.status_code == HTTPStatus.BAD_REQUEST
         assert response.json() == {'detail': 'There is a dog with pk 1002'}
+
+    async def test_get_by_id(self, client: AsyncClient):
+        response = await client.get('/dog/0')
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == {'name': 'Bob', 'pk': 0, 'kind': 'terrier'}
+
+    async def test_get_by_id_not_found(self, client: AsyncClient):
+        response = await client.get('/dog/9999')
+        assert response.status_code == HTTPStatus.NOT_FOUND
+        assert response.json() == {'detail': 'There is no dog with pk=9999'}
+
+    async def test_update_dog(self, client: AsyncClient):
+        dog_list_response = await client.get('/dog', params={'kind': DogType.terrier.value})
+        dog_list = dog_list_response.json()
+        dog = copy(dog_list[0])
+        pk = dog['pk']
+        dog['name'] = 'unusual_name'
+
+        response = await client.patch(f'/dog/{pk}', json=dog)
+        assert response.status_code == HTTPStatus.OK
+        assert response.json() == dog
+        new_dog_response = await client.get(f'/dog/{pk}')
+        new_dog = new_dog_response.json()
+        assert new_dog != dog_list[0]
+        assert new_dog == dog

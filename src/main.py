@@ -69,12 +69,17 @@ async def get_dog(pk: int) -> Dog:
         )
 
 
-@app.get('/dog/{pk}')
-async def update_dog(pk: int) -> Dog:
+@app.patch('/dog/{pk}')
+async def update_dog(pk: int, dog: Dog) -> Dog:
     try:
-        return database.dog_db.get_by_id(pk)
-    except KeyError:
+        return database.dog_db.update_dog(pk, dog)
+    except KeyError as key_error:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
-            detail=f'There is no dog with pk={pk}'
+            detail=str(key_error)
+        )
+    except ValueError as value_error:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(value_error)
         )

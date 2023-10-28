@@ -36,7 +36,7 @@ class DogRepository:
     def get_by_id(self, pk: int) -> Dog:
         return self.db[pk]
 
-    def update_dog(self, dog: Dog, pk: int) -> Dog:
+    def update_dog(self, pk: int, dog: Dog) -> Dog:
         if pk not in self.db:
             raise KeyError(f'There is not a dog with pk = {pk}')
 
