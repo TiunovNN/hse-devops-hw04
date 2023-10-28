@@ -1,26 +1,13 @@
-from enum import Enum
+from http import HTTPStatus
+from itertools import count
+
 from fastapi import FastAPI
-from pydantic import BaseModel
+from fastapi.exceptions import HTTPException
+
+import database
+from models import Dog, DogType, Timestamp
 
 app = FastAPI()
-
-
-class DogType(str, Enum):
-    terrier = "terrier"
-    bulldog = "bulldog"
-    dalmatian = "dalmatian"
-
-
-class Dog(BaseModel):
-    name: str
-    pk: int
-    kind: DogType
-
-
-class Timestamp(BaseModel):
-    id: int
-    timestamp: int
-
 
 dogs_db = {
     0: Dog(name='Bob', pk=0, kind='terrier'),
@@ -31,17 +18,68 @@ dogs_db = {
     5: Dog(name='Tillman', pk=5, kind='bulldog'),
     6: Dog(name='Uga', pk=6, kind='bulldog')
 }
+dogs_next_id = count(7).__next__
 
 post_db = [
     Timestamp(id=0, timestamp=12),
     Timestamp(id=1, timestamp=10)
 ]
+post_next_id = count(2).__next__
+
+
+@app.on_event('startup')
+async def startup_event():
+    database.connect()
 
 
 @app.get('/')
-def root():
-    # ваш код здесь
-    ...
+async def root():
+    return {}
 
-# ваш код здесь
-...
+
+@app.post('/post')
+async def get_timestemp() -> Timestamp:
+    return database.post_db.create_timestamp()
+
+
+@app.get('/dog')
+async def get_dogs(kind: DogType) -> list[Dog]:
+    return database.dog_db.get_by_kind(kind)
+
+
+@app.post('/dog')
+async def create_dog(dog: Dog) -> Dog:
+    try:
+        return database.dog_db.create(dog)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(error)
+        )
+
+
+@app.get('/dog/{pk}')
+async def get_dog(pk: int) -> Dog:
+    try:
+        return database.dog_db.get_by_id(pk)
+    except KeyError:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=f'There is no dog with pk={pk}'
+        )
+
+
+@app.patch('/dog/{pk}')
+async def update_dog(pk: int, dog: Dog) -> Dog:
+    try:
+        return database.dog_db.update_dog(pk, dog)
+    except KeyError as key_error:
+        raise HTTPException(
+            status_code=HTTPStatus.NOT_FOUND,
+            detail=str(key_error)
+        )
+    except ValueError as value_error:
+        raise HTTPException(
+            status_code=HTTPStatus.BAD_REQUEST,
+            detail=str(value_error)
+        )
