@@ -1,5 +1,5 @@
 # hse-devops-hw04
-![tests](https://github.com/github/TiunovNN/hse-devops-hw04/actions/workflows/python-app.yml/badge.svg)
+![tests](https://github.com/TiunovNN/hse-devops-hw04/actions/workflows/python-app.yml/badge.svg)
 ## Автор
 Тиунов Николай
 
