@@ -6,7 +6,7 @@ from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import DogModel
+from .models import DogModel, TimestampModel
 from schemas import Dog, DogType, Timestamp
 
 
@@ -58,14 +58,12 @@ class DogRepository:
 
 
 class PostRepository:
-    def __init__(self):
-        self.db = [
-            Timestamp(id=0, timestamp=12),
-            Timestamp(id=1, timestamp=10)
-        ]
-        self.next_id = count(2).__next__
+    def __init__(self, db: AsyncSession):
+        self.db = db
 
-    def create_timestamp(self) -> Timestamp:
-        record = Timestamp(id=self.next_id(), timestamp=int(time.time()))
-        self.db.append(record)
-        return record
+    async def create_timestamp(self) -> Timestamp:
+        record = TimestampModel(timestamp=int(time.time()))
+        self.db.add(record)
+        await self.db.commit()
+        await self.db.refresh(record)
+        return TypeAdapter(Timestamp).validate_python(record)

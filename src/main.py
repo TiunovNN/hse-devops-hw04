@@ -16,6 +16,7 @@ async def get_db() -> AsyncSession:
     async with database.SessionLocal() as session:
         yield session
 
+
 DBSession = Annotated[AsyncSession, Depends(get_db)]
 
 
@@ -23,12 +24,12 @@ async def dog_db(db: DBSession):
     return database.DogRepository(db)
 
 
+async def post_db(db: DBSession):
+    return database.PostRepository(db)
+
+
 DogDB = Annotated[database.DogRepository, Depends(dog_db)]
-
-
-@app.on_event('startup')
-async def startup_event():
-    database.connect()
+PostDB = Annotated[database.PostRepository, Depends(post_db)]
 
 
 @app.get('/')
@@ -37,8 +38,8 @@ async def root():
 
 
 @app.post('/post')
-async def get_timestemp() -> Timestamp:
-    return database.post_db.create_timestamp()
+async def get_timestamp(db: PostDB) -> Timestamp:
+    return await db.create_timestamp()
 
 
 @app.get('/dog')

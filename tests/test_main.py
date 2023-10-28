@@ -3,15 +3,15 @@ from copy import copy
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
 from anys import ANY_INT
+from httpx import AsyncClient
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
-from database import DogRepository
-from src.main import app, get_db
-from src.schemas import Dog, DogType
+from database import DogModel, TimestampModel
 from src.database.base_class import Base
+from src.main import app, get_db
+from src.schemas import DogType
 
 pytestmark = pytest.mark.anyio
 
@@ -41,16 +41,21 @@ def anyio_backend():
 @pytest.fixture()
 async def prepare_data(db_session):
     dogs = [
-        Dog(name='Bob', pk=0, kind='terrier'),
-        Dog(name='Marli', pk=1, kind="bulldog"),
-        Dog(name='Snoopy', pk=2, kind='dalmatian'),
-        Dog(name='Rex', pk=3, kind='dalmatian'),
-        Dog(name='Pongo', pk=4, kind='dalmatian'),
-        Dog(name='Tillman', pk=5, kind='bulldog'),
-        Dog(name='Uga', pk=6, kind='bulldog'),
+        DogModel(name='Bob', pk=0, kind='terrier'),
+        DogModel(name='Marli', pk=1, kind="bulldog"),
+        DogModel(name='Snoopy', pk=2, kind='dalmatian'),
+        DogModel(name='Rex', pk=3, kind='dalmatian'),
+        DogModel(name='Pongo', pk=4, kind='dalmatian'),
+        DogModel(name='Tillman', pk=5, kind='bulldog'),
+        DogModel(name='Uga', pk=6, kind='bulldog'),
     ]
-    for dog in dogs:
-        await DogRepository(db_session).create(dog)
+    timestamps = [
+        TimestampModel(id=0, timestamp=12),
+        TimestampModel(id=1, timestamp=10)
+    ]
+    db_session.add_all(dogs)
+    db_session.add_all(timestamps)
+    await db_session.commit()
 
 
 @pytest.fixture
