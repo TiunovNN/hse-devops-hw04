@@ -9,7 +9,7 @@ from settings import settings
 
 @cache
 def async_engine():
-    engine = create_async_engine(settings().DATABASE_URL, echo=True)
+    return create_async_engine(settings().DATABASE_URL, echo=True)
 
 
 @cache
