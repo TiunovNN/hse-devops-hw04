@@ -1,13 +1,12 @@
 import time
-from itertools import count
 
 from pydantic import TypeAdapter
 from sqlalchemy import select, update
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from .models import DogModel, TimestampModel
 from schemas import Dog, DogType, Timestamp
+from .models import DogModel, TimestampModel
 
 
 class DogRepository:
@@ -24,7 +23,7 @@ class DogRepository:
         return TypeAdapter(list[Dog]).validate_python(result.scalars().all())
 
     async def create(self, dog: Dog) -> Dog:
-        db_dog =DogModel(
+        db_dog = DogModel(
             pk=dog.pk,
             name=dog.name,
             kind=dog.kind,
