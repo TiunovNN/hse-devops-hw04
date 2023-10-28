@@ -30,4 +30,4 @@ class ErrorMessage(BaseModel):
     detail: str
 
 
-DogId = Annotated[int, annotated_types.Ge(0), annotated_types.Lt(2 ** 31)]
+DogId = Annotated[int, annotated_types.Interval(ge=0, lt=2 ** 31)]
