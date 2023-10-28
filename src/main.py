@@ -1,37 +1,13 @@
 from http import HTTPStatus
-from typing import Annotated
 
 import uvicorn
-from fastapi import Depends, FastAPI
+from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
-from sqlalchemy.ext.asyncio import AsyncSession
 
-import database
+from deps import DogDB, PostDB
 from schemas import Dog, DogType, Timestamp
-from settings import settings
 
 app = FastAPI()
-
-
-# Dependency
-async def get_db() -> AsyncSession:
-    async with database.async_session() as session:
-        yield session
-
-
-DBSession = Annotated[AsyncSession, Depends(get_db)]
-
-
-async def dog_db(db: DBSession):
-    return database.DogRepository(db)
-
-
-async def post_db(db: DBSession):
-    return database.PostRepository(db)
-
-
-DogDB = Annotated[database.DogRepository, Depends(dog_db)]
-PostDB = Annotated[database.PostRepository, Depends(post_db)]
 
 
 @app.get('/')
@@ -40,8 +16,8 @@ async def root():
 
 
 @app.post('/post')
-async def get_timestamp(db: PostDB) -> Timestamp:
-    return await db.create_timestamp()
+async def get_post(db: PostDB) -> Timestamp:
+    return await db.create()
 
 
 @app.get('/dog')
@@ -61,7 +37,7 @@ async def create_dog(dog: Dog, db: DogDB) -> Dog:
 
 
 @app.get('/dog/{pk}')
-async def get_dog(pk: int, db: DogDB) -> Dog:
+async def get_dog_by_pk(pk: int, db: DogDB) -> Dog:
     try:
         return await db.get_by_id(pk)
     except KeyError:
@@ -85,6 +61,7 @@ async def update_dog(pk: int, dog: Dog, db: DogDB) -> Dog:
             status_code=HTTPStatus.BAD_REQUEST,
             detail=str(value_error)
         )
+
 
 if __name__ == '__main__':
     uvicorn.run(app, host="0.0.0.0", port=80)
