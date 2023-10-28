@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.exceptions import HTTPException
 
 from deps import DogDB, PostDB
-from schemas import Dog, DogType, Timestamp
+from schemas import Dog, DogId, DogType, ErrorMessage, Timestamp
 
 app = FastAPI()
 
@@ -25,7 +25,7 @@ async def get_dogs(kind: DogType, db: DogDB) -> list[Dog]:
     return await db.get_by_kind(kind)
 
 
-@app.post('/dog')
+@app.post('/dog', responses={400: {'model': ErrorMessage}})
 async def create_dog(dog: Dog, db: DogDB) -> Dog:
     try:
         return await db.create(dog)
@@ -36,19 +36,19 @@ async def create_dog(dog: Dog, db: DogDB) -> Dog:
         )
 
 
-@app.get('/dog/{pk}')
-async def get_dog_by_pk(pk: int, db: DogDB) -> Dog:
+@app.get('/dog/{pk}', responses={404: {'model': ErrorMessage}})
+async def get_dog_by_pk(pk: DogId, db: DogDB) -> Dog:
     try:
         return await db.get_by_id(pk)
-    except KeyError:
+    except KeyError as e:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
-            detail=f'There is no dog with pk={pk}'
+            detail=e.args[0]
         )
 
 
-@app.patch('/dog/{pk}')
-async def update_dog(pk: int, dog: Dog, db: DogDB) -> Dog:
+@app.patch('/dog/{pk}', responses={400: {'model': ErrorMessage}, 404: {'model': ErrorMessage}})
+async def update_dog(pk: DogId, dog: Dog, db: DogDB) -> Dog:
     try:
         return await db.update_dog(pk, dog)
     except KeyError as key_error:
