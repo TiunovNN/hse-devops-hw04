@@ -22,3 +22,7 @@ class Timestamp(BaseModel):
 
     id: int
     timestamp: int
+
+
+class ErrorMessage(BaseModel):
+    detail: str

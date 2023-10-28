@@ -43,18 +43,23 @@ class DogRepository:
         try:
             return TypeAdapter(Dog).validate_python(result.scalar_one())
         except NoResultFound:
-            raise KeyError(f'There is not a dog with pk = {pk}')
+            raise KeyError(f'There is not a dog with pk={pk}')
 
     async def update_dog(self, pk: int, dog: Dog) -> Dog:
+        dog.pk = None
         statement = (
             update(DogModel)
-            .values(dog.model_dump())
+            .values(dog.model_dump(exclude_none=True))
             .where(DogModel.pk == pk)
         )
 
-        await self.db.execute(statement)
-        await self.db.commit()
-        return await self.get_by_id(dog.pk)
+        try:
+            await self.db.execute(statement)
+            await self.db.commit()
+        except IntegrityError:
+            raise ValueError('Bad request')
+
+        return await self.get_by_id(pk)
 
 
 class PostRepository:
