@@ -1,6 +1,6 @@
 from enum import Enum
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 
 class DogType(str, Enum):
@@ -10,11 +10,15 @@ class DogType(str, Enum):
 
 
 class Dog(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     name: str
     pk: int | None = None
     kind: DogType
 
 
 class Timestamp(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: int
     timestamp: int
