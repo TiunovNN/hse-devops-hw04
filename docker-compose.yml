@@ -10,12 +10,12 @@ services:
       - "5432:5432"
     restart: unless-stopped
     volumes:
-      - ".postgres-data:/var/lib/postgresql/data:delegated"
-      - "init.sql:/docker-entrypoint-initdb.d/init.sql"
+      - "${HOME}/postgres-data:/var/lib/postgresql/data:delegated"
+      - "${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql"
   web:
     build: .
     environment:
-      - API_DATABASE_URL=postgresql+asyncpg://root:root@db/postgres
+      - API_DATABASE_URL=postgresql+asyncpg://root:root@db/appdb
       - API_SYNC_DATABASE_URL=postgresql://root:root@db/appdb
       - WAIT_HOSTS=db:5432
     ports:

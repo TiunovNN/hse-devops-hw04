@@ -54,6 +54,7 @@ class DogRepository:
         )
 
         await self.db.execute(statement)
+        await self.db.commit()
         return await self.get_by_id(dog.pk)
 
 
