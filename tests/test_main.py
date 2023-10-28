@@ -10,7 +10,8 @@ from sqlalchemy.orm import sessionmaker
 
 from database import DogModel, TimestampModel
 from src.database.base_class import Base
-from src.main import app, get_db
+from src.main import app
+from deps import get_db
 from src.schemas import DogType
 
 pytestmark = pytest.mark.anyio

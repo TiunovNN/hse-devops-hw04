@@ -62,7 +62,7 @@ class PostRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def create_timestamp(self) -> Timestamp:
+    async def create(self) -> Timestamp:
         record = TimestampModel(timestamp=int(time.time()))
         self.db.add(record)
         await self.db.commit()
