@@ -3,13 +3,34 @@ from copy import copy
 from http import HTTPStatus
 
 import pytest
-from httpx import AsyncClient
 from anys import ANY_INT
+from httpx import AsyncClient
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.orm import sessionmaker
 
-from src.main import app
-from src.models import DogType
+from database import DogModel, TimestampModel
+from src.database.base_class import Base
+from src.main import app, get_db
+from src.schemas import DogType
 
 pytestmark = pytest.mark.anyio
+
+
+@pytest.fixture()
+async def db_session() -> AsyncSession:
+    engine = create_async_engine('sqlite+aiosqlite://', echo=True)
+    async with engine.begin() as connection:
+        await connection.run_sync(Base.metadata.drop_all)
+        await connection.run_sync(Base.metadata.create_all)
+        TestingSessionLocal = sessionmaker(
+            expire_on_commit=False,
+            class_=AsyncSession,
+            bind=engine,
+        )
+        async with TestingSessionLocal(bind=connection) as session:
+            yield session
+            await session.flush()
+            await session.rollback()
 
 
 @pytest.fixture
@@ -17,8 +38,32 @@ def anyio_backend():
     return 'asyncio'
 
 
+@pytest.fixture()
+async def prepare_data(db_session):
+    dogs = [
+        DogModel(name='Bob', pk=0, kind='terrier'),
+        DogModel(name='Marli', pk=1, kind="bulldog"),
+        DogModel(name='Snoopy', pk=2, kind='dalmatian'),
+        DogModel(name='Rex', pk=3, kind='dalmatian'),
+        DogModel(name='Pongo', pk=4, kind='dalmatian'),
+        DogModel(name='Tillman', pk=5, kind='bulldog'),
+        DogModel(name='Uga', pk=6, kind='bulldog'),
+    ]
+    timestamps = [
+        TimestampModel(id=0, timestamp=12),
+        TimestampModel(id=1, timestamp=10)
+    ]
+    db_session.add_all(dogs)
+    db_session.add_all(timestamps)
+    await db_session.commit()
+
+
 @pytest.fixture
-async def client():
+async def client(db_session, prepare_data):
+    async def _override_get_db():
+        yield db_session
+
+    app.dependency_overrides[get_db] = _override_get_db
     async with AsyncClient(app=app, base_url='http://test') as client:
         yield client
 

@@ -1,56 +1,60 @@
 from http import HTTPStatus
-from itertools import count
+from typing import Annotated
 
-from fastapi import FastAPI
+import uvicorn
+from fastapi import Depends, FastAPI
 from fastapi.exceptions import HTTPException
+from sqlalchemy.ext.asyncio import AsyncSession
 
 import database
-from models import Dog, DogType, Timestamp
+from schemas import Dog, DogType, Timestamp
 
 app = FastAPI()
 
-dogs_db = {
-    0: Dog(name='Bob', pk=0, kind='terrier'),
-    1: Dog(name='Marli', pk=1, kind="bulldog"),
-    2: Dog(name='Snoopy', pk=2, kind='dalmatian'),
-    3: Dog(name='Rex', pk=3, kind='dalmatian'),
-    4: Dog(name='Pongo', pk=4, kind='dalmatian'),
-    5: Dog(name='Tillman', pk=5, kind='bulldog'),
-    6: Dog(name='Uga', pk=6, kind='bulldog')
-}
-dogs_next_id = count(7).__next__
 
-post_db = [
-    Timestamp(id=0, timestamp=12),
-    Timestamp(id=1, timestamp=10)
-]
-post_next_id = count(2).__next__
+# Dependency
+async def get_db() -> AsyncSession:
+    async with database.async_session() as session:
+        yield session
+
+
+DBSession = Annotated[AsyncSession, Depends(get_db)]
+
+
+async def dog_db(db: DBSession):
+    return database.DogRepository(db)
+
+
+async def post_db(db: DBSession):
+    return database.PostRepository(db)
+
+
+DogDB = Annotated[database.DogRepository, Depends(dog_db)]
+PostDB = Annotated[database.PostRepository, Depends(post_db)]
 
 
 @app.on_event('startup')
-async def startup_event():
-    database.connect()
-
-
+async def on_startup():
+    await connection.run_sync(Base.metadata.create_all)
 @app.get('/')
 async def root():
     return {}
 
 
 @app.post('/post')
-async def get_timestemp() -> Timestamp:
-    return database.post_db.create_timestamp()
+async def get_timestamp(db: PostDB) -> Timestamp:
+    return await db.create_timestamp()
 
 
 @app.get('/dog')
-async def get_dogs(kind: DogType) -> list[Dog]:
-    return database.dog_db.get_by_kind(kind)
+async def get_dogs(kind: DogType, db: DogDB) -> list[Dog]:
+    return await db.get_by_kind(kind)
 
 
 @app.post('/dog')
-async def create_dog(dog: Dog) -> Dog:
+async def create_dog(dog: Dog, db: DogDB) -> Dog:
     try:
-        return database.dog_db.create(dog)
+        return await db.create(dog)
     except ValueError as error:
         raise HTTPException(
             status_code=HTTPStatus.BAD_REQUEST,
@@ -59,9 +63,9 @@ async def create_dog(dog: Dog) -> Dog:
 
 
 @app.get('/dog/{pk}')
-async def get_dog(pk: int) -> Dog:
+async def get_dog(pk: int, db: DogDB) -> Dog:
     try:
-        return database.dog_db.get_by_id(pk)
+        return await db.get_by_id(pk)
     except KeyError:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
@@ -70,9 +74,9 @@ async def get_dog(pk: int) -> Dog:
 
 
 @app.patch('/dog/{pk}')
-async def update_dog(pk: int, dog: Dog) -> Dog:
+async def update_dog(pk: int, dog: Dog, db: DogDB) -> Dog:
     try:
-        return database.dog_db.update_dog(pk, dog)
+        return await db.update_dog(pk, dog)
     except KeyError as key_error:
         raise HTTPException(
             status_code=HTTPStatus.NOT_FOUND,
@@ -83,3 +87,6 @@ async def update_dog(pk: int, dog: Dog) -> Dog:
             status_code=HTTPStatus.BAD_REQUEST,
             detail=str(value_error)
         )
+
+if __name__ == '__main__':
+    uvicorn.run(app, host="0.0.0.0", port=80)
