@@ -94,12 +94,18 @@ async def test_unique_timestamp_id(client: AsyncClient):
 
 class TestDogs:
     @pytest.mark.parametrize('kind', list(DogType))
-    async def test_get_list(self, client: AsyncClient, kind):
+    async def test_get_list_by_kind(self, client: AsyncClient, kind):
         response = await client.get('/dog', params={'kind': kind.value})
         assert response.status_code == HTTPStatus.OK, response.text
         dogs = response.json()
         assert len(dogs) > 0
         assert all(dog['kind'] == kind.value for dog in dogs)
+
+    async def test_get_list(self, client: AsyncClient):
+        response = await client.get('/dog')
+        assert response.status_code == HTTPStatus.OK, response.text
+        dogs = response.json()
+        assert len(dogs) == 7
 
     async def test_wrong_kind(self, client: AsyncClient):
         response = await client.get('/dog', params={'kind': 'wrong_kind'})
