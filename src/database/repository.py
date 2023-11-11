@@ -1,4 +1,5 @@
 import time
+from typing import Optional
 
 from pydantic import TypeAdapter
 from sqlalchemy import select, update
@@ -13,12 +14,11 @@ class DogRepository:
     def __init__(self, db: AsyncSession):
         self.db = db
 
-    async def get_by_kind(self, kind: DogType) -> list[Dog]:
-        statement = (
-            select(DogModel)
-            .where(DogModel.kind == kind)
-            .order_by(DogModel.pk.desc())
-        )
+    async def list(self, kind: Optional[DogType] = None) -> list[Dog]:
+        statement = select(DogModel).order_by(DogModel.pk.desc())
+        if kind:
+            statement = statement.where(DogModel.kind == kind)
+
         result = await self.db.execute(statement)
         return TypeAdapter(list[Dog]).validate_python(result.scalars().all())
 

@@ -1,4 +1,5 @@
 from http import HTTPStatus
+from typing import Optional
 
 import uvicorn
 from fastapi import FastAPI
@@ -21,8 +22,8 @@ async def get_post(db: PostDB) -> Timestamp:
 
 
 @app.get('/dog')
-async def get_dogs(kind: DogType, db: DogDB) -> list[Dog]:
-    return await db.get_by_kind(kind)
+async def get_dogs(db: DogDB, kind: DogType = None) -> list[Dog]:
+    return await db.list(kind)
 
 
 @app.post('/dog', responses={400: {'model': ErrorMessage}})
