@@ -1,5 +1,5 @@
 # Dockerfile
-FROM python:3.11
+FROM python:3.11-slim
 ADD https://github.com/ufoscout/docker-compose-wait/releases/download/2.9.0/wait /wait
 RUN chmod +x /wait
 WORKDIR /src
@@ -10,5 +10,5 @@ COPY docker-entrypoint.sh /src/
 RUN chmod +x /src/docker-entrypoint.sh
 COPY src /src
 
-EXPOSE 80
+EXPOSE 5555
 CMD ["./docker-entrypoint.sh"]

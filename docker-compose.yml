@@ -13,13 +13,13 @@ services:
       - "${HOME}/postgres-data:/var/lib/postgresql/data:delegated"
       - "${PWD}/init.sql:/docker-entrypoint-initdb.d/init.sql"
   web:
-    build: .
+    image: tiunovnn/hse-devops-hw04:latest
     environment:
       - API_DATABASE_URL=postgresql+asyncpg://root:root@db/appdb
       - API_SYNC_DATABASE_URL=postgresql://root:root@db/appdb
       - WAIT_HOSTS=db:5432
     ports:
-      - "80:80"
+      - "80:5555"
     restart: always
     depends_on:
       - db
